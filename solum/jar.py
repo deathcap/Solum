@@ -9,6 +9,7 @@ except ImportError:
     from StringIO import StringIO
 
 from .manifest import ManifestFile
+from .core import ClassFile
 
 
 class JarError(Exception):
@@ -44,7 +45,19 @@ class JarFile(object):
         Opens and returns a file-like object for `filename`. The caller
         is responsible for closing this resource when finished.
         """
-        return StringIO(self.read(filename))
+        contents = self.read(filename)
+        if not contents:
+            raise JarError('file does not exist')
+        return StringIO(contents)
+
+    def open_class(self, filename):
+        """
+        Opens and returns a ClassFile object for the given `filename`.
+        If the filename is missing the .class suffix, it will be added.
+        """
+        if not filename.endswith('.class'):
+            filename = '%s.class' % filename
+        return ClassFile(self.open(filename))
 
     def write(self, filename, contents):
         """

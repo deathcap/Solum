@@ -12,8 +12,10 @@ class ManifestError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
+
 def _chunk_line(line, n):
-    return [line[i:i+n] for i in range(0, len(line), n)]
+    return [line[i:i + n] for i in range(0, len(line), n)]
+
 
 class ManifestFile(object):
     """Parses, constructs, and validates MANIFEST.MF files."""
@@ -77,7 +79,7 @@ class ManifestFile(object):
         """
         Returns a human-readable string of what program has created or
         editted this JAR file. This should not be relied upon, as there
-        is no convention to its format nor verification as to its 
+        is no convention to its format nor verification as to its
         authenticity.
         """
         return self._header.get('Created-By', '2.0.0 (Solum)')
@@ -151,7 +153,7 @@ class ManifestFile(object):
 
         # Build the manifest header
         output.append('Manifest-Version: 1.0\n')
-        for k,v in self._header.iteritems():
+        for k, v in self._header.iteritems():
             # We only output V1 manifests, so ignore
             # this if it's set.
             if k == 'Manifest-Version':
@@ -164,7 +166,7 @@ class ManifestFile(object):
         # Build the manifest sections
         for package_name, package_data in self._entries.iteritems():
             output.append('Name: %s\n' % package_name)
-            for k,v in package_data.iteritems():
+            for k, v in package_data.iteritems():
                 if k == 'Name':
                     continue
                 if v is None:
@@ -173,7 +175,7 @@ class ManifestFile(object):
             output.append('\n')
 
         # Chunk all the lines so none is more than
-        # 72 characters, including colon, space, 
+        # 72 characters, including colon, space,
         # and newline.
         final = []
         for i, line in enumerate(output):
@@ -189,4 +191,3 @@ class ManifestFile(object):
             final.append(' %s' % last_line)
 
         return ''.join(final)
-

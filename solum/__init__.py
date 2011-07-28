@@ -2,9 +2,15 @@
 # -*- coding: utf8 -*-
 from .jar import JarFile, JarError
 from .manifest import ManifestError
+from .core import ClassFile, ClassError
+from .descriptor import field_descriptor, method_descriptor
 
 __all__ = [
     'JarFile',
     'JarError',
-    'ManifestError'
+    'ManifestError',
+    'ClassFile',
+    'ClassError',
+    'field_descriptor',
+    'method_descriptor'
 ]
