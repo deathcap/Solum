@@ -118,6 +118,33 @@ class ManifestFile(object):
 
         self._header['Main-Class'] = value
 
+    def get_entry(self, name):
+        """Returns the dictionary for the entry `name`."""
+        ct = self._entries.get(name)
+        return ct.copy() if ct is not None else None
+
+    def get_header(self, field):
+        """Returns a field from the header."""
+        return self._header.get(field)
+
+    def add_package(self, name, values):
+        """
+        Adds a new section to the manifest, populating it with `values`,
+        which can be anything accepted to the dict() constructo.
+        """
+        self._entries[name] = dict(values)
+        self._entries[name]['Name'] = name
+
+    @property
+    def packages(self):
+        """Returns a (shallow) copy of all packages in the manifest."""
+        return self._entries.copy()
+
+    @property
+    def headers(self):
+        """Returns a (shallow) copy of the manifest header."""
+        return self._header.copy()
+
     def build(self):
         """Returns the final, valid MANIFEST.MF file as a string."""
         output = []
