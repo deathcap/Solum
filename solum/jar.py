@@ -19,6 +19,7 @@ class JarError(Exception):
 class JarFile(object):
     def __init__(self, source=None):
         self._files = {}
+        self._cache_class_count = None
 
         if source and zipfile.is_zipfile(source):
             source_ = zipfile.ZipFile(source, 'r')
@@ -50,7 +51,33 @@ class JarFile(object):
         Creates or overwrites `filename` with `contents`. This has
         no effect on-disk until `save()` is called.
         """
+        self._cache_class_count = None
         self._files[filename] = contents
+
+    def remove(self, filename):
+        """
+        Removes the file `filename` if it exists. Returns `True` if the file
+        was removed, `False` otherwise.
+        """
+        if filename in self._files:
+            self._cache_class_count = None
+            del self._files[filename]
+            return True
+        return False
+
+    @property
+    def class_count(self):
+        """Returns the number of classes in the JAR."""
+        if self._cache_class_count is not None:
+            return self._cache_class_count
+
+        tally = 0
+        for file_ in self._files.iterkeys():
+            if file_.endswith('.class'):
+                tally += 1
+
+        self._cache_class_count = tally
+        return tally
 
     def save(self, output):
         """
