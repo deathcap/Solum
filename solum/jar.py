@@ -3,6 +3,10 @@
 __all__ = ['JarFile', 'JarError']
 
 import zipfile
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from .manifest import ManifestFile
 
@@ -30,7 +34,32 @@ class JarFile(object):
             self._files.pop('META-INF/MANIFEST.MF', None)
         )
 
+    def read(self, filename):
+        """Returns the contents of the file `filename`."""
+        return self._files.get(filename)
+
+    def open(self, filename):
+        """
+        Opens and returns a file-like object for `filename`. The caller
+        is responsible for closing this resource when finished.
+        """
+        return StringIO(self.read(filename))
+
+    def write(self, filename, contents):
+        """
+        Creates or overwrites `filename` with `contents`. This has
+        no effect on-disk until `save()` is called.
+        """
+        self._files[filename] = contents
+
     def save(self, output):
+        """
+        Saves the JAR into the file at `output`, which will be overwritten
+        if it exists.
+
+        WARNING: This is far from perfect, and information may be lost. It
+        is advised to keep a copy of any source JAR.
+        """
         if not self._files:
             # Trying to write empty ZIPs with ZipFile will produce
             # invalid archives (missing central directory).
@@ -47,4 +76,5 @@ class JarFile(object):
 
     @property
     def manifest(self):
+        """Returns the underlying JAR MANIFEST.MF."""
         return self._manifest
