@@ -12,15 +12,14 @@ class ClassError(Exception):
 
 class ClassFile(object):
     def __init__(self, source=None):
-        we_opened = False
         if source and isinstance(source, basestring):
-            we_opened = True
-            sin = open(source, 'rb')
-        else:
-            sin = source
+            self._load_from_path(source)
+        elif source:
+            self._load_from_file(source)
 
+    def _load_from_file(self, source):
         def read(fmt):
-            return struct.unpack(fmt, sin.read(struct.calcsize(fmt)))
+            return struct.unpack(fmt, source.read(struct.calcsize(fmt)))
 
         magic_number, = read(">I")
         if magic_number != 0xCAFEBABE:
@@ -29,8 +28,10 @@ class ClassFile(object):
         ver_min, ver_maj = read(">HH")
         self._version = (ver_maj, ver_min)
 
-        if we_opened:
-            sin.close()
+    def _load_from_path(self, path):
+        sin = open(path, 'rb')
+        self._load_from_file(sin)
+        sin.close()
 
     @staticmethod
     def is_classfile(source):
@@ -38,21 +39,23 @@ class ClassFile(object):
         Returns `True` if `source` is a valid ClassFile, False otherwise.
         If the source does not exist, an exception will be raised.
         """
-        we_opened = False
-        if source and isinstance(source, basestring):
-            we_opened = True
-            sin = open(source, 'rb')
-        else:
-            sin = source
-
-        magic, = struct.unpack('>I', sin.read(4))
-        if we_opened:
-            sin.close()
-
-        if magic == 0xCAFEBABE:
-            return True
-        else:
+        def check_stream(stream):
+            if struct.unpack('>I', stream.read(4))[0] == 0xCAFEBABE:
+                return True
             return False
+
+        if isinstance(source, basestring):
+            tmp = open(source, 'rb')
+            result = check_stream(tmp)
+            tmp.close()
+        else:
+            result = check_stream(source)
+            try:
+                source.seek(0, 0)
+            except IOError:
+                pass
+
+        return result
 
     @property
     def version(self):
