@@ -297,7 +297,7 @@ class ConstantPool(object):
 
         tmp = []
         for const in self._storage:
-            if tag is not None and const['tag'] != tag:
+            if tag is not None and const.tag != tag:
                 continue
 
             if f is not None and not f(const):
@@ -306,6 +306,20 @@ class ConstantPool(object):
             tmp.append(const)
 
         return tmp
+
+    def find_one(self, tag=None, f=None):
+        if not self._storage:
+            return None
+        elif not tag and not f:
+            return self._storage[0]
+        
+        for const in self._storage:
+            if tag and const.tag != tag:
+                continue
+            elif f and not f(const):
+                continue
+            else:
+                return const
 
     @staticmethod
     def _read(fmt, stream):
@@ -343,8 +357,5 @@ class ConstantPool(object):
 
         for const in pool.find():
             const.resolve_index(pool)
-
-        for const in pool.find():
-            print const
 
         return pool
