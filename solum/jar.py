@@ -56,7 +56,9 @@ class JarFile(object):
         If the filename is missing the .class suffix, it will be added.
         """
         if not filename.endswith('.class'):
+            filename = filename.replace('.', '/')
             filename = '%s.class' % filename
+
         return ClassFile(self.open(filename))
 
     def write(self, filename, contents):
