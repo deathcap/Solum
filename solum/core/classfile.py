@@ -4,6 +4,8 @@ __all__ = ['ClassFile', 'ClassError']
 
 import struct
 
+from .constants import ConstantPool
+
 
 class ClassError(Exception):
     def __init__(self, msg):
@@ -12,6 +14,9 @@ class ClassError(Exception):
 
 class ClassFile(object):
     def __init__(self, source=None):
+        self._this = None
+        self._version = (0x31, 0)
+
         if source and isinstance(source, basestring):
             self._load_from_path(source)
         elif source:
@@ -27,6 +32,8 @@ class ClassFile(object):
 
         ver_min, ver_maj = read(">HH")
         self._version = (ver_maj, ver_min)
+
+        self._cp = ConstantPool.read(source)
 
     def _load_from_path(self, path):
         sin = open(path, 'rb')
