@@ -2,360 +2,211 @@
 # -*- coding: utf8 -*-
 __all__ = ['ConstantError']
 
-import struct
-from functools import partial
-
-
-class ConstantError(Exception):
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
-
-
-class Constant(object):
-    @staticmethod
-    def read(r):
-        """Reads the packed representation of a Cosntant."""
-        raise NotImplementedError()
-
-    @staticmethod
-    def write(w):
-        """Saves the packed representation of a Constant."""
-        raise NotImplementedError()
-
-    def __str__(self):
-        """Retuns a human-readable representation of this Constant."""
-        raise NotImplementedError()
-
-    def resolve_index(self, pool):
-        """Used to resolve indexes when reading from a file."""
-        raise NotImplementedError()
-
-    @property
-    def tag(self):
-        raise NotImplementedError()
-
-
-class ConstantClass(Constant):
-    def __init__(self, name_index=None):
-        self.name_index = name_index
-        self.name = None 
-
-    @staticmethod
-    def read(r):
-        t = ConstantClass(*r('>H'))
-        return t
-
-    def __str__(self):
-        return 'ConstantClass(name=%s)' % self.name
-
-    def resolve_index(self, pool):
-        self.name = pool[self.name_index]
-
-    @property
-    def tag(self):
-        return 7
-
-
-class ConstantField(Constant):
-    def __init__(self, class_index=None, name_type_index=None):
-        self.class_index = class_index
-        self.name_and_type_index = name_type_index
-        self.class_ = None
-        self.name_and_type = None
-
-    @staticmethod
-    def read(r):
-        t = ConstantField(*r('>HH'))
-        return t
-
-    def __str__(self):
-        return 'ConstantField(class_=%s, name_and_type=%s)' % (
-            self.class_, self.name_and_type)
-
-    def resolve_index(self, pool):
-        self.class_ = pool[self.class_index]
-        self.name_and_type = pool[self.name_and_type_index]
-
-    @property
-    def tag(self):
-        return 9
-
-
-class ConstantMethod(Constant):
-    def __init__(self, class_index=None, name_type_index=None):
-        self.class_index = class_index
-        self.name_and_type_index = name_type_index
-        self.class_ = None
-        self.name_and_type = None
-
-    @staticmethod
-    def read(r):
-        t = ConstantMethod(*r('>HH'))
-        return t
-
-    def __str__(self):
-        return 'ConstantMethod(class_=%s, name_and_type=%s)' % (
-            self.class_, self.name_and_type)
-
-    def resolve_index(self, pool):
-        self.class_ = pool[self.class_index]
-        self.name_and_type = pool[self.name_and_type_index]
-
-    @property
-    def tag(self):
-        return 10
-
-
-class ConstantIMethod(Constant):
-    def __init__(self, class_index=None, name_type_index=None):
-        self.class_index = class_index
-        self.name_and_type_index = name_type_index
-        self.class_ = None
-        self.name_and_type = None
-
-    @staticmethod
-    def read(r):
-        t = ConstantIMethod(*r('>HH'))
-        return t
-
-    def __str__(self):
-        return 'ConstantIMethod(class_=%s, name_and_type=%s)' % (
-            self.class_, self.name_and_type)
-
-    def resolve_index(self, pool):
-        self.class_ = pool[self.class_index]
-        self.name_and_type = pool[self.name_and_type_index]
-
-    @property
-    def tag(self):
-        return 11
-
-
-class ConstantString(Constant):
-    def __init__(self, string_index=None):
-        self.string_index = string_index
-        self.string = None
-
-    @staticmethod
-    def read(r):
-        t = ConstantString(*r('>H'))
-        return t
-
-    def __str__(self):
-        return 'ConstantString(string=%s)' % self.string
-
-    def resolve_index(self, pool):
-        self.string = pool[self.string_index]
-
-    @property
-    def tag(self):
-        return 8
-
-
-class ConstantInteger(Constant):
-    def __init__(self, value=None):
-        self.value = value
-
-    @staticmethod
-    def read(r):
-        t = ConstantInteger(*r('>i'))
-        return t
-
-    def __str__(self):
-        return 'ConstantInteger(value=%r)' % self.value
-
-    def resolve_index(self, pool):
-        pass
-
-    @property
-    def tag(self):
-        return 3
-
-
-class ConstantFloat(Constant):
-    def __init__(self, value=None):
-        self.value = value
-
-    @staticmethod
-    def read(r):
-        t = ConstantFloat(*r('>f'))
-        return t
-
-    def __str__(self):
-        return 'ConstantFloat(value=%r)' % self.value
-
-    def resolve_index(self, pool):
-        pass
-
-    @property
-    def tag(self):
-        return 4
-
-
-class ConstantLong(Constant):
-    def __init__(self, value=None):
-        self.value = value
-
-    @staticmethod
-    def read(r):
-        t = ConstantLong(*r('>q'))
-        return t
-
-    def __str__(self):
-        return 'ConstantLong(value=%r)' % self.value
-
-    def resolve_index(self, pool):
-        pass
-
-    @property
-    def tag(self):
-        return 5
-
-
-class ConstantDouble(Constant):
-    def __init__(self, value=None):
-        self.value = value
-
-    @staticmethod
-    def read(r):
-        t = ConstantDouble(*r('>d'))
-        return t
-
-    def __str__(self):
-        return 'ConstantDouble(value=%r)' % self.value
-
-    def resolve_index(self, pool):
-        pass
-
-    @property
-    def tag(self):
-        return 6
-
-
-class ConstantNameAndType(Constant):
-    def __init__(self, name_index=None, descriptor_index=None):
-        self.name_index = name_index
-        self.descriptor_index = descriptor_index
-        self.name = None
-        self.descriptor = None
-
-    @staticmethod
-    def read(r):
-        t = ConstantNameAndType(*r('>HH'))
-        return t
-
-    def __str__(self):
-        return 'ConstantNameAndType(name=%s, descriptor=%s)' % (
-            self.name, self.descriptor)
-
-    def resolve_index(self, pool):
-        self.name = pool[self.name_index]
-        self.descriptor = pool[self.descriptor_index]
-
-    @property
-    def tag(self):
-        return 12
-
-
-class ConstantUTF8(Constant):
-    def __init__(self, value=None):
-        self.value = value
-
-    @staticmethod
-    def read(r):
-        size, = r('>H')
-        t = ConstantUTF8(*r('>%ss' % size))
-        return t
-
-    def __str__(self):
-        return 'ConstantUTF8(value=%r)' % self.value
-
-    def resolve_index(self, pool):
-        pass
-
-    @property
-    def tag(self):
-        return 1
+from collections import namedtuple
+
+from ..util import StreamReader
+from ..descriptor import method_descriptor, field_descriptor
+
+
+class ConstantType(object):
+    CLASS = 7
+    FIELD = 9
+    METHOD = 10
+    INTERFACE = 11
+    STRING = 8
+    INTEGER = 3
+    FLOAT = 4
+    LONG = 5
+    DOUBLE = 6
+    NAME_AND_TYPE = 12
+    UTF8 = 1
+
+Constant = namedtuple('Constant', 'tag disk_index')
+ConstantClass = namedtuple('ConstantClass', Constant._fields + ('name',))
+ConstantString = namedtuple('ConstantString', Constant._fields + ('value',))
+ConstantInteger = namedtuple('ConstantInteger', Constant._fields + ('value',))
+ConstantFloat = namedtuple('ConstantFloat', Constant._fields + ('value',))
+ConstantLong = namedtuple('ConstantLong', Constant._fields + ('value',))
+ConstantDouble = namedtuple('ConstantDouble', Constant._fields + ('value',))
+ConstantMethod = namedtuple('ConstantMethod',
+        Constant._fields + ('class_name', 'name', 'takes', 'returns'))
+ConstantField = namedtuple('ConstantField',
+        Constant._fields + ('class_name', 'name', 'of_type'))
+ConstantInterface = namedtuple('ConstantInterface',
+        Constant._fields + ('class_name', 'name', 'of_type'))
 
 
 class ConstantPool(object):
-    def __init__(self):
-        self._storage = []
-        self._index_map = {}
+    def __init__(self, source=None, collect_stats=True):
+        """
+        Constructs a new constants pool, optionally
+        loading it from the given `source`.
+        """
+        self._constants = []
 
-    def add_constant(self, constant, index=None):
-        self._storage.append(constant)
-        if index is not None:
-            self._index_map[index] = constant
+        if source is not None:
+            self.read_from_file(source)
 
-    def __getitem__(self, index):
-        return self._index_map[index]
+    def read_from_file(self, source):
+        """
+        Reads in a constant pool from `source`, assuming the
+        cursor is positioned at the pool length prelude.
+        """
+        sr = StreamReader(source)
+
+        # Get the number of entries in the constant pool, with
+        # each long and double counting as two entries.
+        pool_count = sr.read('>H')[0]
+        position = 1
+
+        # Store our temporary indices to be remapped after
+        # loading from the stream.
+        temporary_map = {}
+
+        while position < pool_count:
+            tag, = sr.read('>B')
+            tmp = dict(tag=tag)
+
+            # All three of these have the same on-disk structure.
+            if tag in (ConstantType.METHOD,
+                    ConstantType.FIELD, ConstantType.INTERFACE):
+                tmp['class_index'], tmp['type_index'] = sr.read('>HH')
+            elif tag == ConstantType.CLASS:
+                tmp['name_index'], = sr.read('>H')
+            elif tag == ConstantType.STRING:
+                tmp['string_index'], = sr.read('>H')
+            elif tag == ConstantType.INTEGER:
+                tmp['value'], = sr.read('>i')
+            elif tag == ConstantType.FLOAT:
+                tmp['value'], = sr.read('>f')
+            elif tag == ConstantType.LONG:
+                tmp['value'], = sr.read('>q')
+            elif tag == ConstantType.DOUBLE:
+                tmp['value'], = sr.read('>d')
+            elif tag == ConstantType.NAME_AND_TYPE:
+                tmp.update(zip(
+                    ['name_index', 'descriptor_index'],
+                    sr.read('>HH')
+                ))
+            elif tag == ConstantType.UTF8:
+                length, = sr.read('>H')
+                tmp['value'], = sr.read('>%ss' % length)
+
+            temporary_map[position] = tmp
+            position += 2 if tag in (ConstantType.DOUBLE,
+                    ConstantType.LONG) else 1
+
+        # Now that we have the complete map, we can create our
+        # internal constants and get rid of the cruft.
+        for index, constant in temporary_map.iteritems():
+            tag = constant['tag']
+            if tag == ConstantType.CLASS:
+                name = temporary_map[constant['name_index']]['value']
+                name = name.replace('/', '.')
+                tmp = ConstantClass(tag, index, name)
+            elif tag == ConstantType.STRING:
+                value = temporary_map[constant['string_index']]['value']
+                tmp = ConstantString(tag, index, value)
+            elif tag == ConstantType.INTEGER:
+                tmp = ConstantInteger(tag, index, constant['value'])
+            elif tag == ConstantType.FLOAT:
+                tmp = ConstantFloat(tag, index, constant['value'])
+            elif tag == ConstantType.LONG:
+                tmp = ConstantLong(tag, index, constant['value'])
+            elif tag == ConstantType.DOUBLE:
+                tmp = ConstantDouble(tag, index, constant['value'])
+            elif tag == ConstantType.NAME_AND_TYPE:
+                # Will be inlined by anything that needs it.
+                continue
+            elif tag == ConstantType.UTF8:
+                # Will be inlined by anything that needs it.
+                continue
+            elif tag in (9, 10, 11):
+                class_ = temporary_map[constant['class_index']]
+                name = temporary_map[class_['name_index']]['value']
+                name = name.replace('/', '.')
+                type_ = temporary_map[constant['type_index']]
+                type_name = temporary_map[type_['name_index']]['value']
+                descriptor = temporary_map[type_['descriptor_index']]['value']
+
+                if tag == ConstantType.METHOD:
+                    args, returns = method_descriptor(descriptor)
+                    tmp = ConstantMethod(tag, index, name, type_name, args,
+                        returns)
+                elif tag == ConstantType.FIELD:
+                    of_type = field_descriptor(descriptor)
+                    tmp = ConstantField(tag, index, name, type_name, of_type)
+                elif tag == ConstantType.INTERFACE:
+                    args, returns = method_descriptor(descriptor)
+                    tmp = ConstantInterface(tag, index, name, type_name, args,
+                        returns)
+            else:
+                raise RuntimeError('Invalid constant type.')
+
+            self.add(tmp)
+
+    def add(self, constant):
+        """Adds a Constant object to our internal mechanism."""
+        self._constants.append(constant)
+
+    def remove(self, tag=None, f=None):
+        """
+        Removes all matching constants from the pool that match
+        the criteria.
+        """
+        def keep(constant):
+            if tag is not None and constant.tag != tag:
+                return False
+
+            if f is not None and not f(constant):
+                return False
+
+            return True
+
+        self._constants[:] = [c for c in self._constants if keep(c)]
+
+    def remove_one(self, tag=None, f=None, instance=None):
+        """
+        Removes the first constant from the pool that matches the given
+        criteria, returning it.
+        """
+        for i, constant in enumerate(self._constants):
+            if instance is not None and constant is instance:
+                return self._constants.pop(i)
+
+            if tag is not None and constant.tag != tag:
+                continue
+
+            if f is not None and not f(constant):
+                continue
+
+            return self._constants.pop(i)
 
     def find(self, tag=None, f=None):
-        if not tag and not f:
-            return self._storage
-
-        tmp = []
-        for const in self._storage:
-            if tag is not None and const.tag != tag:
+        """
+        Yields all constants from the pool that match the criteria.
+        """
+        for constant in self._constants:
+            if tag is not None and constant.tag != tag:
                 continue
 
-            if f is not None and not f(const):
+            if f is not None and not f(constant):
                 continue
 
-            tmp.append(const)
-
-        return tmp
+            yield constant
 
     def find_one(self, tag=None, f=None):
-        if not self._storage:
-            return None
-        elif not tag and not f:
-            return self._storage[0]
-        
-        for const in self._storage:
-            if tag and const.tag != tag:
+        """
+        Returns the first matching constant from the pool,
+        or `None` if there were no matches.
+        """
+        for constant in self._constants:
+            if tag is not None and constant.tag != tag:
                 continue
-            elif f and not f(const):
+
+            if f is not None and not f(constant):
                 continue
-            else:
-                return const
 
-    @staticmethod
-    def _read(fmt, stream):
-        size = struct.calcsize(fmt)
-        return struct.unpack(fmt, stream.read(size))
+            return constant
 
-    @staticmethod
-    def read(stream):
-        pool = ConstantPool()
-        r = partial(ConstantPool._read, stream=stream)
-
-        # Size is 1-based, and counts LONG and DOUBLE
-        # constants as two entries (for legacy reasons).
-        size, = r('>H')
-        x = 1
-
-        while x < size:
-            tag, = r('>B')
-
-            pool.add_constant({
-                7: ConstantClass,
-                9: ConstantField,
-                10: ConstantMethod,
-                11: ConstantIMethod,
-                8: ConstantString,
-                3: ConstantInteger,
-                4: ConstantFloat,
-                5: ConstantLong,
-                6: ConstantDouble,
-                12: ConstantNameAndType,
-                1: ConstantUTF8
-            }[tag].read(r), x)
-
-            x += 2 if tag in (5, 6) else 1
-
-        for const in pool.find():
-            const.resolve_index(pool)
-
-        return pool
+        return None

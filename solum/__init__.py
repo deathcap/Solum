@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 from .jar import JarFile, JarError
 from .manifest import ManifestError
-from .core import ClassFile, ClassError
+from .core import ClassFile, ClassError, ConstantType
 from .descriptor import field_descriptor, method_descriptor
 
 __all__ = [

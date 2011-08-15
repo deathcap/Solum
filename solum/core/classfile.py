@@ -33,7 +33,7 @@ class ClassFile(object):
         ver_min, ver_maj = read(">HH")
         self._version = (ver_maj, ver_min)
 
-        self._cp = ConstantPool.read(source)
+        self._cp = ConstantPool(source)
 
     def _load_from_path(self, path):
         sin = open(path, 'rb')
@@ -63,6 +63,11 @@ class ClassFile(object):
                 pass
 
         return result
+
+    @property
+    def constants(self):
+        """Returns the class constant pool."""
+        return self._cp
 
     @property
     def version(self):
