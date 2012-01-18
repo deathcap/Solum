@@ -24,4 +24,5 @@ THE SOFTWARE.
 __all__ = ["classfile", "constants"]
 
 from .classfile import ClassFile, ClassError
+from .attributes import ElementValueType
 from .constants import ConstantType

@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-__all__ = ["AttributeTable"]
+__all__ = ["AttributeTable", "ElementValueType"]
 
 try:
     from collections import namedtuple
@@ -60,9 +60,106 @@ class CodeAttribute(object):
             self.exception_table.append(CodeException(*read(">HHHH")))
 
         self.attributes = AttributeTable(read, constants)
+        
+class ElementValueType(object):
+     STRING = 's'
+     ENUM = 'e'
+     CLASS = 'c'
+     ANNOTATION = '@'
+     ARRAY = '['
+     BYTE = 'B'
+     CHAR = 'C'
+     DOUBLE = 'D'
+     FLOAT = 'F'
+     INT = 'I'
+     LONG = 'J'
+     SHORT = 'S'
+     BOOLEAN = 'Z'
+
+ElementValue = namedtuple("ElementValue", [
+    "tag",
+    "value"
+])
+
+class ElementAttribute(object):
+    def read_annotation(self, read, constants):
+        annotation = {}
+        type_idx, num_values = read(">HH")
+        annotation["class"] = constants[type_idx]["value"][1:-1]
+        values = {}
+        while num_values:
+            num_values -= 1
+            name_idx = read(">H")[0]
+            name = constants[name_idx]["value"]
+            values[name] = self.read_element_value(read, constants)
+        annotation["fields"] = values
+        return annotation
+        
+    def read_element_value(self, read, constants):
+        tag = read(">c")[0]
+        value = None
+        if tag == ElementValueType.ENUM:
+            type_name_idx, const_name_idx = read(">HH")
+            value = (constants[type_name_idx]["value"][1:-1], constants[const_name_idx]["value"])
+        elif tag == ElementValueType.ANNOTATION:
+            value = self.read_annotation(read, constants)
+        elif tag == ElementValueType.ARRAY:
+            num_values = read(">H")[0]
+            value = []
+            while num_values:
+                num_values -= 1
+                value.append(self.read_element_value(read, constants))
+        elif tag == ElementValueType.CLASS:
+            value = constants[read(">H")[0]]["value"][1:-1]
+        else:
+            value = constants[read(">H")[0]]["value"]
+        return ElementValue(tag, value)
+        
+class AnnotationsAttribute(ElementAttribute):
+    """
+    Implements the RuntimeVisibleAnnotations and RuntimeInvisibleAnnotations attributes
+    """
+    def __init__(self, read, constants):
+        length = read(">I")[0]
+        num_annotations = read(">H")[0]
+        self._annotations_table = []
+        while num_annotations:
+            num_annotations -= 1
+            self._annotations_table.append(self.read_annotation(read, constants))
+            
+    @property
+    def annotations(self):
+        return self._annotations_table
+        
+class ParameterAnnotationsAttribute(AnnotationsAttribute):
+    """
+    Implements the RuntimeVisibleParameterAnnotations and RuntimeInvisibleParameterAnnotations attributes
+    """
+    def __init__(self, read, constants):
+        length = read(">I")[0]
+        num_params = read(">B")[0]
+        self._annotations_table = []
+        while num_params:
+            num_params -= 1
+            num_annotations = read(">H")[0]
+            param_annotations = []
+            while num_annotations:
+                num_annotations -= 1
+                param_annotations.append(self.read_annotation(read, constants))
+            self._annotations_table.append(param_annotations)
+    
+class AnnotationDefaultAttribute(ElementAttribute):
+    def __init__(self, read, constants):
+        length = read(">I")[0]
+        self.default_value = self.read_element_value(read, constants)
 
 _attribute_map = {
     "Code": CodeAttribute,
+    "RuntimeVisibleAnnotations": AnnotationsAttribute,
+    "RuntimeInvisibleAnnotations": AnnotationsAttribute,
+    "RuntimeVisibleParameterAnotations": ParameterAnnotationsAttribute,
+    "RuntimeInvisibleParameterAnotations": ParameterAnnotationsAttribute,
+    "AnnotationDefault": AnnotationDefaultAttribute
 }
 
 
@@ -100,7 +197,7 @@ class AttributeTable(object):
 
             ret.append(attribute)
 
-        return attribute
+        return ret
 
     def find_one(self, name=None, f=None):
         for attribute in self.storage:
