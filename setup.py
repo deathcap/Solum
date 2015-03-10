@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
     name='Sŏlum',
-    packages=['solum'],
+    packages=['solum', 'solum/core', 'solum/util'],
     version='2.0.0',
     description='A low-level library for JVM class file maniplation.',
     author='Tyler Kennedy',
